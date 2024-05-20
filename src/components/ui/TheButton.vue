@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineEmits, defineProps, ref, withDefaults } from "vue";
+import { ref, withDefaults } from "vue";
 
 export interface Props {
     type?: "button" | "submit" | "reset";
