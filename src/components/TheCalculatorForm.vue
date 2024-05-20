@@ -1,17 +1,35 @@
 <script lang="ts" setup>
-import { computed, ref } from "vue";
-import { PaymentFrequency } from "~/enums/paymentFrequency.ts";
-import { TopUp } from "~/interfaces/topUp.ts";
+import { computed, ref, watch } from "vue";
+import { DepositChangeFrequency, PaymentFrequency } from "~/enums/frequencies.ts";
+import { DepositChange } from "~/interfaces/depositChange.ts";
 import { mapPaymentFrequency, mapPeriodType } from "~/utils/mappers.ts";
 import { ru } from "date-fns/locale";
 import TheInput from "~/components/ui/TheInput.vue";
 import TheSelect from "~/components/ui/TheSelect.vue";
 import { PeriodType } from "~/enums/period.ts";
+import TheDepositChange from "~/components/TheDepositChange.vue";
+import TheButton from "~/components/ui/TheButton.vue";
+import TheDivider from "~/components/ui/TheDivider.vue";
+import { CalculatorForm } from "~/interfaces/form.ts";
+import { CalculationResult } from "~/interfaces/payments.ts";
+import { calculateProfit } from "~/utils/calculator.ts";
+import TheCalculationsResult from "~/components/TheCalculationsResult.vue";
 
-const amount = ref<number>(0);
+const openDate = new Date();
+const closeDate = new Date(openDate);
+closeDate.setDate(closeDate.getDate() + 1);
 
-const rate = ref<number>(0);
-const paymentFrequency = ref<PaymentFrequency>(PaymentFrequency.DAILY);
+const form = ref<CalculatorForm>({
+    amount: 0,
+    rate: 0,
+    paymentFrequency: PaymentFrequency.DAILY,
+    openDate: openDate,
+    closeDate: closeDate,
+    isTopUps: false,
+    topUps: [],
+    isWithdraws: false,
+    withdraws: [],
+});
 
 const paymentFrequencyOptions = computed<{ value: PaymentFrequency; label: string }[]>(() => {
     return Object.values(PaymentFrequency).map((frequency) => {
@@ -22,19 +40,13 @@ const paymentFrequencyOptions = computed<{ value: PaymentFrequency; label: strin
     });
 });
 
-const openDate = ref<Date>(new Date());
-const tempDate = new Date(openDate.value);
-tempDate.setDate(tempDate.getDate() + 1);
-const closeDate = ref<Date>(tempDate);
-
 const minimalCloseDate = computed<Date>(() => {
-    const minimalCloseDate = new Date(openDate.value);
+    const minimalCloseDate = new Date(form.value.openDate);
     minimalCloseDate.setDate(minimalCloseDate.getDate() + 1);
     return minimalCloseDate;
 });
 
-const inputtedPeriod = ref<number>(1);
-
+const period = ref<number>(1);
 const periodType = ref<PeriodType>(PeriodType.DAY);
 const periodTypesWithNoInput = [PeriodType.HALF_YEAR, PeriodType.ONE_YEAR, PeriodType.TWO_YEAR, PeriodType.THREE_YEAR];
 
@@ -104,41 +116,103 @@ const calculatePeriod = (startDate: Date, closeDate: Date, periodType: PeriodTyp
 const updatePeriod = () => {
     periodType.value = PeriodType.DAY;
 
-    if (openDate.value > closeDate.value) {
-        const tempDate = new Date(openDate.value);
-        tempDate.setDate(tempDate.getDate() + inputtedPeriod.value);
-        closeDate.value = tempDate;
+    if (form.value.openDate > form.value.closeDate) {
+        const tempDate = new Date(form.value.openDate);
+        tempDate.setDate(tempDate.getDate() + period.value);
+        form.value.closeDate = tempDate;
     } else {
-        inputtedPeriod.value = calculatePeriod(openDate.value, closeDate.value, periodType.value);
+        period.value = calculatePeriod(form.value.openDate, form.value.closeDate, periodType.value);
     }
 };
 
 const updateCloseDate = () => {
-    closeDate.value = calculateCloseDate(openDate.value, inputtedPeriod.value, periodType.value);
+    form.value.closeDate = calculateCloseDate(form.value.openDate, period.value, periodType.value);
 };
 
-const isTopUps = ref<boolean>(false);
-const topUps = ref<TopUp[]>([]);
+const topUpsCounter = ref<number>(0);
 
-const isWithdraws = ref<boolean>(false);
-const withdraws = ref<TopUp[]>([]);
+watch(
+    () => form.value.isTopUps,
+    (newValue: boolean, oldValue: boolean) => {
+        if (!oldValue && newValue && form.value.topUps.length === 0) {
+            addTopUp();
+        }
+    }
+);
+
+const addTopUp = () => {
+    form.value.topUps.push({
+        id: topUpsCounter.value++,
+        amount: 0,
+        frequency: DepositChangeFrequency.ONE_TIME,
+        date: new Date(),
+    });
+};
+
+const removeTopUp = (id: number) => {
+    form.value.topUps = form.value.topUps.filter((topUp) => topUp.id !== id);
+};
+
+const updateTopUp = (id: number, value: DepositChange) => {
+    form.value.topUps = form.value.topUps.map((topUp) => (topUp.id === id ? value : topUp));
+};
+
+const withdrawsCounter = ref<number>(0);
+
+watch(
+    () => form.value.isWithdraws,
+    (newValue: boolean, oldValue: boolean) => {
+        if (!oldValue && newValue && form.value.withdraws.length === 0) {
+            addWithdraw();
+        }
+    }
+);
+
+const addWithdraw = () => {
+    form.value.withdraws.push({
+        id: withdrawsCounter.value++,
+        amount: 0,
+        frequency: DepositChangeFrequency.ONE_TIME,
+        date: new Date(),
+    });
+};
+
+const removeWithdraw = (id: number) => {
+    form.value.withdraws = form.value.withdraws.filter((withdraw) => withdraw.id !== id);
+};
+
+const updateWithdraw = (id: number, value: DepositChange) => {
+    form.value.withdraws = form.value.withdraws.map((withdraw) => (withdraw.id === id ? value : withdraw));
+};
+
+const calculationResult = ref<CalculationResult>();
+
+const calculate = () => {
+    calculationResult.value = calculateProfit(form.value);
+};
 </script>
 
 <template>
     <form>
         <div class="calculator-form">
-            <TheInput v-model.number="amount" label="Сумма" type="number" uid="initialAmount" />
+            <TheInput v-model.number="form.amount" label="Сумма" type="number" uid="initialAmount">
+                <template #after> ₽</template>
+            </TheInput>
 
-            <TheInput v-model.number="rate" label="Ставка" type="number" uid="rate">
+            <TheInput v-model.number="form.rate" label="Ставка" type="number" uid="rate">
                 <template #after> %</template>
             </TheInput>
 
-            <TheSelect v-model="paymentFrequency" :options="paymentFrequencyOptions" label="Периодичность выплат" />
+            <TheSelect
+                v-model="form.paymentFrequency"
+                :options="paymentFrequencyOptions"
+                label="Периодичность выплат"
+            />
 
             <div class="datepicker-wrapper">
-                <label for="dp-input-openDate">Дата открытия</label>
+                <label class="datepicker-label" for="dp-input-openDate">Дата открытия</label>
                 <VueDatePicker
-                    v-model="openDate"
+                    v-model="form.openDate"
                     :auto-apply="true"
                     :enable-time-picker="false"
                     :format-locale="ru"
@@ -156,7 +230,7 @@ const withdraws = ref<TopUp[]>([]);
                     <label for="period">Срок</label>
                     <TheInput
                         v-if="!isPeriodTypeWithNoInput(periodType)"
-                        v-model.number="inputtedPeriod"
+                        v-model.number="period"
                         v-model:error-message="periodError"
                         :no-error="true"
                         :rules="periodInputRules"
@@ -176,9 +250,9 @@ const withdraws = ref<TopUp[]>([]);
             </div>
 
             <div class="datepicker-wrapper">
-                <label for="dp-input-closeDate">Дата закрытия</label>
+                <label class="datepicker-label" for="dp-input-closeDate">Дата закрытия</label>
                 <VueDatePicker
-                    v-model="closeDate"
+                    v-model="form.closeDate"
                     :auto-apply="true"
                     :enable-time-picker="false"
                     :format-locale="ru"
@@ -192,59 +266,90 @@ const withdraws = ref<TopUp[]>([]);
                 </VueDatePicker>
             </div>
 
-            <div>
-                <TheInput v-model="isTopUps" label="Пополнения" type="checkbox" />
+            <div class="top-ups-wrapper">
+                <TheInput v-model="form.isTopUps" label="Пополнения" type="checkbox" />
+                <div class="top-ups" v-if="form.isTopUps">
+                    <TransitionGroup name="deposit-change" tag="div" class="top-ups" v-if="form.isTopUps">
+                        <div v-for="(topUp, index) in form.topUps" :key="topUp.id">
+                            <div class="top-up-wrapper">
+                                <TheDepositChange
+                                    :style="{ marginBottom: index !== form.topUps.length - 1 ? '10px' : '0' }"
+                                    :uid="index.toString()"
+                                    :modelValue="topUp"
+                                    :min-date="form.openDate"
+                                    :max-date="form.closeDate"
+                                    @update:modelValue="updateTopUp(topUp.id, $event)"
+                                />
+                                <TheButton @click.prevent="removeTopUp(topUp.id)" color="#ff0000" text-color="#fff">
+                                    &#10005;
+                                </TheButton>
+                            </div>
+                            <TheDivider
+                                v-if="form.topUps.length > 1 && index !== form.topUps.length - 1"
+                                :style="{ marginBottom: index !== form.topUps.length ? '10px' : '0' }"
+                            />
+                        </div>
+                    </TransitionGroup>
+                </div>
+                <TheButton v-if="form.isTopUps" @click.prevent="addTopUp()" color="#088500" text-color="#fff">
+                    Добавить пополнение
+                </TheButton>
             </div>
 
-            <!--        <div>-->
-            <!--            <label for="isTopUp">Пополнения</label>-->
-            <!--            <input id="isTopUp" type="checkbox" v-model="isTopUp" />-->
-            <!--        </div>-->
-            <!--        <div v-if="isTopUp">-->
-            <!--            <div v-for="(topUp, index) in topUps" :key="index">-->
-            <!--                <label for="topUpAmount">Сумма пополнения</label>-->
-            <!--                <input id="topUpAmount" type="number" v-model="topUp.amount" />-->
-            <!--                <label for="topUpDate">Дата пополнения</label>-->
-            <!--                <input id="topUpDate" type="date" v-model="topUp.date" />-->
-            <!--            </div>-->
-            <!--            <button @click="topUps.push({ amount: 0, date: new Date() })">Добавить пополнение</button>-->
-            <!--        </div>-->
-            <!--        <div>-->
-            <!--            <label for="isWithdraw">Снятия</label>-->
-            <!--            <input id="isWithdraw" type="checkbox" v-model="isWithdraw" />-->
-            <!--        </div>-->
-            <!--        <div v-if="isWithdraw">-->
-            <!--            <div v-for="(withdraw, index) in withdraws" :key="index">-->
-            <!--                <label for="withdrawAmount">Сумма снятия</label>-->
-            <!--                <input id="withdrawAmount" type="number" v-model="withdraw.amount" />-->
-            <!--                <label for="withdrawDate">Дата снятия</label>-->
-            <!--                <input id="withdrawDate" type="date" v-model="withdraw.date" />-->
-            <!--            </div>-->
-            <!--            <button @click="withdraws.push({ amount: 0, date: new Date() })">Добавить снятие</button>-->
-            <!--        </div>-->
-            <!--        <div>-->
-            <!--            <label for="period">Период</label>-->
-            <!--            <input id="period" type="number" :value="period" readonly />-->
-            <!--        </div>-->
+            <div class="withdraws-wrapper">
+                <TheInput v-model="form.isWithdraws" label="Частичные снятия" type="checkbox" />
+                <div class="withdraws" v-if="form.isWithdraws">
+                    <TransitionGroup name="deposit-change" tag="div" class="withdraws" v-if="form.isWithdraws">
+                        <div v-for="(withdraw, index) in form.withdraws" :key="withdraw.id">
+                            <div class="withdraw-wrapper">
+                                <TheDepositChange
+                                    :style="{ marginBottom: index !== form.withdraws.length - 1 ? '10px' : '0' }"
+                                    :uid="index.toString()"
+                                    :modelValue="withdraw"
+                                    :min-date="form.openDate"
+                                    :max-date="form.closeDate"
+                                    @update:modelValue="updateWithdraw(withdraw.id, $event)"
+                                />
+                                <TheButton
+                                    @click.prevent="removeWithdraw(withdraw.id)"
+                                    color="#ff0000"
+                                    text-color="#fff"
+                                >
+                                    &#10005;
+                                </TheButton>
+                            </div>
+                            <TheDivider
+                                v-if="form.withdraws.length > 1 && index !== form.withdraws.length - 1"
+                                :style="{ marginBottom: index !== form.withdraws.length ? '10px' : '0' }"
+                            />
+                        </div>
+                    </TransitionGroup>
+                </div>
+                <TheButton v-if="form.isWithdraws" @click.prevent="addWithdraw()" color="#088500" text-color="#fff">
+                    Добавить снятие
+                </TheButton>
+            </div>
+
+            <TheButton type="submit" color="#088500" text-color="#fff" width="100%" @click.prevent="calculate">
+                Рассчитать
+            </TheButton>
         </div>
     </form>
+    <TheCalculationsResult v-if="calculationResult" :result="calculationResult" />
 </template>
 
 <style lang="scss" scoped>
+@import "~/style.scss";
+
 .calculator-form {
     display: flex;
     flex-direction: column;
-    width: 600px;
+    width: $content-width;
     margin-top: 20px;
 
     & > *:not(:last-child) {
         margin-bottom: 20px;
     }
-}
-
-.datepicker-wrapper {
-    display: flex;
-    flex-direction: row;
 }
 
 .period-picker-wrapper {
@@ -277,5 +382,31 @@ const withdraws = ref<TopUp[]>([]);
 .error-leave-to {
     opacity: 0;
     transform: translateX(30px);
+}
+
+.top-ups,
+.withdraws {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.top-up-wrapper,
+.withdraw-wrapper {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.deposit-change-enter-active,
+.deposit-change-leave-active {
+    transition: all 0.3s ease;
+}
+
+.deposit-change-enter-from,
+.deposit-change-leave-to {
+    opacity: 0;
+    transform: translateX(50px);
 }
 </style>

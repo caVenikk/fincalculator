@@ -6,7 +6,7 @@ export enum PaymentFrequency {
     ONE_TIME = "ONE_TIME",
 }
 
-export enum TopUpFrequency {
+export enum DepositChangeFrequency {
     ONE_TIME = "ONE_TIME",
     ONCE_A_MONTH = "ONCE_A_MONTH",
     ONCE_A_HALF_YEAR = "ONCE_A_HALF_YEAR",

@@ -13,13 +13,12 @@ export interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    type: () => "text",
+    type: "text",
 });
 
 const emit = defineEmits<{
     "update:modelValue": [value: any];
     "update:errorMessage": [value: string];
-    "input": [event: Event];
 }>();
 
 const rightLabelTypes = ["checkbox", "radio", "switch"];
@@ -28,7 +27,8 @@ const isRightLabel = computed(() => rightLabelTypes.includes(props.type));
 
 const handleInput = (event: Event) => {
     const target = event.target as HTMLInputElement;
-    emit("update:modelValue", target.value);
+    const value = props.type === "checkbox" ? target.checked : target.value;
+    emit("update:modelValue", value);
 };
 
 const isValid = computed(() => {
@@ -38,6 +38,8 @@ const isValid = computed(() => {
     }
     return result === true;
 });
+
+const uidPassed = computed(() => props.uid !== undefined);
 </script>
 
 <template>
@@ -46,24 +48,23 @@ const isValid = computed(() => {
             <label
                 v-if="label && isLeftLabel"
                 :class="{ 'left-label': isLeftLabel }"
-                :for="uid ? uid : undefined"
+                :for="uidPassed ? uid : undefined"
                 class="input-label"
             >
                 {{ label }}
             </label>
             <input
-                :id="uid ? uid : undefined"
+                :id="uidPassed ? uid : undefined"
                 :class="{ invalid: !isValid }"
                 :type="type"
                 :value="modelValue"
                 class="the-input"
-                v-bind="$attrs"
                 @input="handleInput"
             />
             <label
                 v-if="label && isRightLabel"
                 :class="{ 'right-label': isRightLabel }"
-                :for="uid ? uid : undefined"
+                :for="uidPassed ? uid : undefined"
                 class="input-label"
             >
                 {{ label }}

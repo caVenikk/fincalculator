@@ -29,17 +29,18 @@ const isValid = computed(() => {
     }
     return result === true;
 });
+
+const uidPassed = computed(() => props.uid !== undefined);
 </script>
 
 <template>
     <div class="select-wrapper">
-        <label v-if="label" :for="uid ? uid : undefined" class="select-label">{{ label }}</label>
+        <label v-if="label" :for="uidPassed ? uid : undefined" class="select-label">{{ label }}</label>
         <select
-            :id="uid ? uid : undefined"
+            :id="uidPassed ? uid : undefined"
             :class="{ invalid: !isValid }"
             :value="modelValue"
             class="the-select"
-            v-bind="$attrs"
             @input="handleInput"
         >
             <option v-for="(option, index) in options" :key="index" :value="option.value">

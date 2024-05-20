@@ -1,4 +1,4 @@
-import { PaymentFrequency } from "~/enums/paymentFrequency.ts";
+import { DepositChangeFrequency, PaymentFrequency } from "~/enums/frequencies.ts";
 import { PeriodType } from "~/enums/period.ts";
 
 export const mapPaymentFrequency = (paymentFrequency: PaymentFrequency): string => {
@@ -23,4 +23,14 @@ export const mapPeriodType = (periodType: PeriodType): string => {
         [PeriodType.THREE_YEAR]: "3 года",
     };
     return map[periodType];
+};
+
+export const mapDepositChangeFrequency = (depositChangeFrequency: DepositChangeFrequency): string => {
+    const map: Record<DepositChangeFrequency, string> = {
+        [DepositChangeFrequency.ONE_TIME]: "Единовременно",
+        [DepositChangeFrequency.ONCE_A_MONTH]: "Раз в месяц",
+        [DepositChangeFrequency.ONCE_A_HALF_YEAR]: "Раз в полгода",
+        [DepositChangeFrequency.ONCE_A_YEAR]: "Раз в год",
+    };
+    return map[depositChangeFrequency];
 };
