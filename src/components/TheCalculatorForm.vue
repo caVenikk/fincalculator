@@ -14,7 +14,7 @@ import { CalculatorForm } from "~/interfaces/form.ts";
 import { CalculationResult } from "~/interfaces/payments.ts";
 import { calculateProfit } from "~/utils/calculator.ts";
 import TheCalculationsResult from "~/components/TheCalculationsResult.vue";
-import { getInRangeRule, getMinRule, getRequiredRule } from "~/utils/validators.ts";
+import { checkRules, getInRangeRule, getMinRule, getRequiredRule } from "~/utils/validators.ts";
 
 const openDate = new Date();
 const closeDate = new Date(openDate);
@@ -30,6 +30,14 @@ const form = ref<CalculatorForm>({
     topUps: [],
     isWithdraws: false,
     withdraws: [],
+});
+
+const formValid = computed<boolean>(() => {
+    return (
+        checkRules(amountInputRules, form.value.amount.toString()) === true &&
+        checkRules(rateInputRules, form.value.rate.toString()) === true &&
+        checkRules(periodInputRules, period.value.toString()) === true
+    );
 });
 
 const amountInputRules = [...getRequiredRule("Введите сумму"), ...getMinRule(0, "Сумма должна быть больше 0")];
@@ -197,7 +205,7 @@ const calculate = () => {
 </script>
 
 <template>
-    <form>
+    <form @submit.prevent>
         <div class="calculator-form">
             <TheInput
                 v-model.number="form.amount"
@@ -340,7 +348,14 @@ const calculate = () => {
                 </TheButton>
             </div>
 
-            <TheButton type="submit" color="#088500" text-color="#fff" width="100%" @click.prevent="calculate">
+            <TheButton
+                type="submit"
+                color="#088500"
+                text-color="#fff"
+                width="100%"
+                @click.prevent="calculate"
+                :disabled="!formValid"
+            >
                 Рассчитать
             </TheButton>
         </div>
