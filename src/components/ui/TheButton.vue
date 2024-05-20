@@ -7,12 +7,14 @@ export interface Props {
     textColor?: string;
     height?: string | number;
     width?: string | number;
+    disabled?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     type: "button",
     color: "#efefef",
     textColor: "#000",
+    disabled: false,
 });
 
 const emit = defineEmits<{
@@ -37,7 +39,13 @@ const styles = ref({
 </script>
 
 <template>
-    <button class="the-button" @click="handleClick" :style="styles">
+    <button
+        class="the-button"
+        :class="{ disabled: disabled }"
+        @click="handleClick"
+        :style="styles"
+        :disabled="disabled"
+    >
         <slot></slot>
     </button>
 </template>
@@ -49,7 +57,15 @@ const styles = ref({
     border-radius: 5px;
     font-size: 16px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition:
+        background-color,
+        opacity 0.3s;
     height: 40px;
+
+    &.disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+        transition: opacity 0.3s;
+    }
 }
 </style>
