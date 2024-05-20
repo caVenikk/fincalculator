@@ -4,7 +4,7 @@ import { DepositChangeFrequency, PaymentFrequency } from "~/enums/frequencies.ts
 
 export const calculateProfit = (data: CalculatorForm): CalculationResult => {
     const { amount, rate, paymentFrequency, openDate, closeDate, isTopUps, topUps, isWithdraws, withdraws } = data;
-    let balance = parseFloat(amount.toFixed(2));
+    let balance = amount;
     let totalAccrued = 0;
     const payments: Payment[] = [];
 
@@ -43,11 +43,9 @@ export const calculateProfit = (data: CalculatorForm): CalculationResult => {
             balance -= withdrawsMap.get(dateString) || 0;
         }
 
-        const accruedAmount = parseFloat((balance * rateDaily).toFixed(2));
+        const accruedAmount = balance * rateDaily;
         balance += accruedAmount;
-        balance = parseFloat(balance.toFixed(2));
         totalAccrued += accruedAmount;
-        totalAccrued = parseFloat(totalAccrued.toFixed(2));
 
         if (
             paymentFrequency === PaymentFrequency.DAILY ||
@@ -67,8 +65,8 @@ export const calculateProfit = (data: CalculatorForm): CalculationResult => {
     return {
         payments,
         summary: {
-            totalAccrued: parseFloat(totalAccrued.toFixed(2)),
-            finalBalance: parseFloat(balance.toFixed(2)),
+            totalAccrued,
+            finalBalance: balance,
         },
     };
 };

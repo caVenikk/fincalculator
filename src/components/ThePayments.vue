@@ -6,12 +6,18 @@ const props = defineProps<{
     payments: Payment[];
 }>();
 
-const paymentHeaders = ["Дата", "Начисленная сумма", "Остаток вклада"];
+const paymentHeaders = ["Дата", "Начисленная сумма, ₽", "Остаток вклада, ₽"];
 </script>
 
 <template>
     <div class="payments">
-        <TheTable :headers="paymentHeaders" :data="payments" :closable="true" :widths="['20%', '40%', '40%']" />
+        <TheTable
+            :headers="paymentHeaders"
+            :data="payments"
+            :closable="true"
+            :widths="['20%', '40%', '40%']"
+            :round="2"
+        />
     </div>
 </template>
 

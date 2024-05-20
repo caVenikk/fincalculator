@@ -6,12 +6,12 @@ const props = defineProps<{
     summary: Summary;
 }>();
 
-const summaryHeaders = ["Всего выплат", "Итоговый остаток вклада"];
+const summaryHeaders = ["Всего выплат, ₽", "Итоговый остаток вклада, ₽"];
 </script>
 
 <template>
     <div class="summary">
-        <TheTable :headers="summaryHeaders" :data="[summary]" :widths="['40%', '60%']" />
+        <TheTable :headers="summaryHeaders" :data="[summary]" :widths="['40%', '60%']" :round="2" />
     </div>
 </template>
 
