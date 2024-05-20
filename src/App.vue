@@ -1,7 +1,12 @@
-<script lang="ts" setup></script>
+<script lang="ts" setup>
+import TheCalculatorForm from "~/components/TheCalculatorForm.vue";
+</script>
 
 <template>
-    <h1>Калькулятор</h1>
+    <main>
+        <h1>Калькулятор вкладов</h1>
+        <TheCalculatorForm />
+    </main>
 </template>
 
-<style scoped></style>
+<style lang="scss" scoped></style>

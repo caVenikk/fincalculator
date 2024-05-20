@@ -1,13 +1,13 @@
-import { createApp } from 'vue'
-import './style.scss'
-import App from './App.vue'
+import { createApp } from "vue";
+import "./style.scss";
+import App from "./App.vue";
 
 // VueDatePicker
-import VueDatePicker from '@vuepic/vue-datepicker';
-import '@vuepic/vue-datepicker/dist/main.css'
+import VueDatePicker from "@vuepic/vue-datepicker";
+import "@vuepic/vue-datepicker/dist/main.css";
 
 const app = createApp(App);
 
-app.component('VueDatePicker', VueDatePicker);
+app.component("VueDatePicker", VueDatePicker);
 
-app.mount('#app');
+app.mount("#app");
