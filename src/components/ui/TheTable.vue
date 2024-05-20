@@ -10,6 +10,7 @@ export interface TableProps {
     rowColor?: string;
     rowTextColor?: string;
     closable?: boolean;
+    round?: number;
 }
 
 const props = withDefaults(defineProps<TableProps>(), {
@@ -44,9 +45,16 @@ const getItem = (item: any) => {
     if (item instanceof Date) {
         return item.toLocaleDateString("ru-RU");
     } else if (typeof item === "number") {
-        return item + " ₽";
+        return formatNumber(item);
     }
     return item;
+};
+
+const formatNumber = (num: number) => {
+    if (props.round !== undefined) {
+        return num.toFixed(props.round);
+    }
+    return num;
 };
 </script>
 
