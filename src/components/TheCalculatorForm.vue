@@ -14,14 +14,15 @@ import { CalculatorForm } from "~/interfaces/form.ts";
 import { CalculationResult } from "~/interfaces/payments.ts";
 import { calculateProfit } from "~/utils/calculator.ts";
 import TheCalculationsResult from "~/components/TheCalculationsResult.vue";
+import { getInRangeRule, getMinRule, getRequiredRule } from "~/utils/validators.ts";
 
 const openDate = new Date();
 const closeDate = new Date(openDate);
 closeDate.setDate(closeDate.getDate() + 1);
 
 const form = ref<CalculatorForm>({
-    amount: 0,
-    rate: 0,
+    amount: 100,
+    rate: 1,
     paymentFrequency: PaymentFrequency.DAILY,
     openDate: openDate,
     closeDate: closeDate,
@@ -30,6 +31,12 @@ const form = ref<CalculatorForm>({
     isWithdraws: false,
     withdraws: [],
 });
+
+const amountInputRules = [...getRequiredRule("Введите сумму"), ...getMinRule(0, "Сумма должна быть больше 0")];
+const rateInputRules = [
+    ...getRequiredRule("Введите ставку"),
+    ...getInRangeRule(1, 100, "Ставка должна быть в диапазоне от 1 до 100"),
+];
 
 const paymentFrequencyOptions = computed<{ value: PaymentFrequency; label: string }[]>(() => {
     return Object.values(PaymentFrequency).map((frequency) => {
@@ -59,10 +66,7 @@ const periodTypeOptions = computed<{ value: PeriodType; label: string }[]>(() =>
     });
 });
 
-const periodInputRules = [
-    (v: string) => !!v || "Введите срок",
-    (v: string) => parseInt(v) > 0 || "Срок должен быть больше 0",
-];
+const periodInputRules = [...getRequiredRule("Введите срок"), ...getMinRule(0, "Срок должен быть больше 0")];
 
 const periodError = ref<string>("");
 
@@ -195,11 +199,17 @@ const calculate = () => {
 <template>
     <form>
         <div class="calculator-form">
-            <TheInput v-model.number="form.amount" label="Сумма" type="number" uid="initialAmount">
+            <TheInput
+                v-model.number="form.amount"
+                label="Сумма"
+                type="number"
+                uid="initialAmount"
+                :rules="amountInputRules"
+            >
                 <template #after> ₽</template>
             </TheInput>
 
-            <TheInput v-model.number="form.rate" label="Ставка" type="number" uid="rate">
+            <TheInput v-model.number="form.rate" label="Ставка" type="number" uid="rate" :rules="rateInputRules">
                 <template #after> %</template>
             </TheInput>
 
